@@ -1,32 +1,34 @@
 import os
 import requests
 import json
-import datetime
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from loguru import logger
 from rich.logging import RichHandler
-logger.configure(handlers=[{"sink":RichHandler(), "format":"{message}"}])
+from enum import Enum
 
-SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL")
+# 環境変数の読み込み
+load_dotenv()
 
-def emmit(state, title, message, timestamp):
+# ロガーの設定
+logger.configure(handlers=[{"sink": RichHandler(), "format": "{message}"}])
+
+# Slack Webhook URLの取得
+SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
+
+class MessageState(Enum):
+    GOOD = ("#00FF00", logger.info)
+    WARNING = ("#FFFF00", logger.warning)
+    DANGER = ("#FF0000", logger.error)
+    NORMAL = ("#FFFFFF", logger.info)
+
+def emit(state: MessageState, title: str, message: str, include_timestamp: bool = True):
     if not SLACK_WEBHOOK_URL:
         logger.error("[SLACK NOTIFIER] SLACK_WEBHOOK_URL is not set")
         return
 
-    # State Color
-    state_color = "#999999"
-    if state == "good":
-        state_color = "#00FF00"  # Assuming 'good' is green
-    elif state == "warning":
-        state_color = "#FFFF00"  # Assuming 'warning' is yellow
-    elif state == "danger":
-        state_color = "#FF0000"  # Assuming 'danger' is red
-    elif state == "normal":
-        state_color = "#FFFFFF"  # Assuming 'normal' is white
-
     post_data = {
-        "color": state_color,
+        "color": state.value[0],
         "fields": [
             {
                 "title": title,
@@ -36,35 +38,21 @@ def emmit(state, title, message, timestamp):
         ],
     }
 
-    # Add Timestamp
-    if timestamp:
-        t_delta = datetime.timedelta(hours=9)
-        JST = datetime.timezone(t_delta, 'JST')
-        now = datetime.datetime.now(JST)
-        value = post_data["fields"][0]["title"]
-        now_str = now.strftime('%Y/%m/%d %H:%M:%S')
-        post_data["fields"][0]["title"] = f"{value} - {now_str}"
+    if include_timestamp:
+        JST = timezone(timedelta(hours=9), 'JST')
+        now = datetime.now(JST).strftime('%Y/%m/%d %H:%M:%S')
+        post_data["fields"][0]["title"] = f"{title} - {now}"
 
-    if state == "warning":
-      logger.warning(f"[SLACK NOTIFIER] Webhookurl {SLACK_WEBHOOK_URL}")
-      logger.warning(f"[SLACK NOTIFIER] State : {state}")
-      logger.warning(f"[SLACK NOTIFIER] Title : {title}")
-      logger.warning(f"[SLACK NOTIFIER] Message : {message}")
-      logger.warning(post_data)
-    elif state == "danger":
-      logger.error(f"[SLACK NOTIFIER] Webhookurl {SLACK_WEBHOOK_URL}")
-      logger.error(f"[SLACK NOTIFIER] State : {state}")
-      logger.error(f"[SLACK NOTIFIER] Title : {title}")
-      logger.error(f"[SLACK NOTIFIER] Message : {message}")
-      logger.error(post_data)
-    else:
-        logger.info(f"[SLACK NOTIFIER] Webhookurl {SLACK_WEBHOOK_URL}")
-        logger.info(f"[SLACK NOTIFIER] State : {state}")
-        logger.info(f"[SLACK NOTIFIER] Title : {title}")
-        logger.info(f"[SLACK NOTIFIER] Message : {message}")
-        logger.info(post_data)
-        
-    requests.post(SLACK_WEBHOOK_URL, data=json.dumps(post_data))
+    log_func = state.value[1]
+    log_func(f"[SLACK NOTIFIER] Webhook URL: {SLACK_WEBHOOK_URL}")
+    log_func(f"[SLACK NOTIFIER] State: {state.name}")
+    log_func(f"[SLACK NOTIFIER] Title: {title}")
+    log_func(f"[SLACK NOTIFIER] Message: {message}")
+    log_func(f"[SLACK NOTIFIER] Post Data: {post_data}")
 
-# Example usage
-# emmit("good", "System Alert", "Everything is running smoothly.", True)
+    response = requests.post(SLACK_WEBHOOK_URL, json=post_data)
+    if response.status_code != 200:
+        logger.error(f"Failed to send Slack notification. Status code: {response.status_code}")
+
+# 使用例
+# emit(MessageState.GOOD, "System Alert", "Everything is running smoothly.")

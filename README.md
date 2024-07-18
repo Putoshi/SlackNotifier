@@ -5,20 +5,19 @@
 
 ## 機能
 - **カスタマイズ可能なメッセージ**: スクリプトは、タイトル、メッセージ本文、状態（good, warning, danger, normal）、およびタイムスタンプの有無をカスタマイズして送信できます。
-- **状態に応じた色分け**: メッセージは、状態に応じて色分けされます（例: goodは緑、warningは黄色、dangerは赤）。
+- **状態に応じた色分け**: メッセージは、状態に応じて色分けされます（例: goodは緑、warningは黄色、dangerは赤、normalは白）。
 - **タイムスタンプの追加**: オプションで現在の日時をメッセージに追加できます。
 
 ## 使用方法
 1. **Webhook URLの設定**: Slackから取得したWebhook URLをスクリプトに設定します。
-2. **関数の呼び出し**: `emmit` 関数を呼び出し、適切なパラメータを渡してメッセージを送信します。
+2. **関数の呼び出し**: `emit` 関数を呼び出し、適切なパラメータを渡してメッセージを送信します。
 
 ### 関数のシグネチャ
 ```python
-emmit(state, title, message, timestamp)
+emit(state, title, message, timestamp)
 ```
 
 ### パラメータ
-- `webhook_url`: SlackのWebhook URL。
 - `state`: メッセージの状態（'good', 'warning', 'danger', 'normal'）。
 - `title`: Slackに表示されるメッセージのタイトル。
 - `message`: Slackに表示されるメッセージ本文。
@@ -27,8 +26,9 @@ emmit(state, title, message, timestamp)
 ## 例
 ```python
 import slack_notifier
+from slack_notifier import MessageState  # MessageState Enumをインポート
 
-slack_notifier.emmit("good", "System Alert", "Everything is running smoothly.", True)
+slack_notifier.emit(MessageState.DANGER, "System Alert", "This is a test message", True)
 ```
 
 この例では、状態が 'good' で、タイトルが "System Alert"、メッセージが "Everything is running smoothly." の通知をSlackに送信し、現在の日時も追加されます。
