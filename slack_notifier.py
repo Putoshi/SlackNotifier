@@ -1,6 +1,5 @@
 import os
 import requests
-import json
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from loguru import logger
