@@ -26,6 +26,10 @@ def emit(state: MessageState, title: str, message: str, include_timestamp: bool 
         logger.error("[SLACK NOTIFIER] SLACK_WEBHOOK_URL is not set")
         return
 
+    # メッセージに @channel を追加する条件を設定
+    if state == MessageState.DANGER:
+        message = "<!channel> " + message
+
     post_data = {
         "color": state.value[0],
         "fields": [
