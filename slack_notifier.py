@@ -43,11 +43,7 @@ def emit(state: MessageState, title: str, message: str, include_timestamp: bool 
         post_data["fields"][0]["title"] = f"{title} - {now}"
 
     log_func = state.value[1]
-    log_func(f"[SLACK NOTIFIER] Webhook URL: {SLACK_WEBHOOK_URL}")
-    log_func(f"[SLACK NOTIFIER] State: {state.name}")
-    log_func(f"[SLACK NOTIFIER] Title: {title}")
-    log_func(f"[SLACK NOTIFIER] Message: {message}")
-    log_func(f"[SLACK NOTIFIER] Post Data: {post_data}")
+    log_func(f"[SLACK NOTIFIER] State: {state.name}, Title: {title}, Message: {message}")
 
     response = requests.post(SLACK_WEBHOOK_URL, json=post_data)
     if response.status_code != 200:
